@@ -4,7 +4,7 @@ using Preferences
 using InteractiveUtils
 using MadNLP
 using MadNLP: SparseWrapperModel
-using MadNLPHSL
+# using MadNLPHSL. # FIXME: can't compile without local HSL
 using NLPModels
 using PrecompileTools: @setup_workload, @compile_workload, verbose
 using Base: unsafe_convert
