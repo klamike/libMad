@@ -195,16 +195,51 @@ class libMad:
         self._check(getattr(self.lib, f"{solver}_get_solution")(stats_ptr, x), "get_solution failed")
         return list(x) if tolist else x
 
+    def get_constraints(self, solver: str, stats_ptr: c_void_p, m: int, tolist=False) -> Union[list[float], ctypes.Array]:
+        g = (c_double * m)()
+        self._check(getattr(self.lib, f"{solver}_get_constraints")(stats_ptr, g), "get_constraints failed")
+        return list(g) if tolist else g
+
+    def get_multipliers(self, solver: str, stats_ptr: c_void_p, m: int, tolist=False) -> Union[list[float], ctypes.Array]:
+        y = (c_double * m)()
+        self._check(getattr(self.lib, f"{solver}_get_multipliers")(stats_ptr, y), "get_multipliers failed")
+        return list(y) if tolist else y
+
+    def get_multipliers_L(self, solver: str, stats_ptr: c_void_p, n: int, tolist=False) -> Union[list[float], ctypes.Array]:
+        zL = (c_double * n)()
+        self._check(getattr(self.lib, f"{solver}_get_multipliers_L")(stats_ptr, zL), "get_multipliers_L failed")
+        return list(zL) if tolist else zL
+
+    def get_multipliers_U(self, solver: str, stats_ptr: c_void_p, n: int, tolist=False) -> Union[list[float], ctypes.Array]:
+        zU = (c_double * n)()
+        self._check(getattr(self.lib, f"{solver}_get_multipliers_U")(stats_ptr, zU), "get_multipliers_U failed")
+        return list(zU) if tolist else zU
+
+    def get_bound_multipliers(self, solver: str, stats_ptr: c_void_p, n: int, tolist=False) -> Union[list[float], ctypes.Array]:
+        z = (c_double * n)()
+        self._check(getattr(self.lib, f"{solver}_get_bound_multipliers")(stats_ptr, z), "get_bound_multipliers failed")
+        return list(z) if tolist else z
+
+    def get_primal_feas(self, solver: str, stats_ptr: c_void_p) -> float:
+        v = c_double()
+        self._check(getattr(self.lib, f"{solver}_get_primal_feas")(stats_ptr, ctypes.byref(v)), "get_primal_feas failed")
+        return float(v.value)
+
+    def get_dual_feas(self, solver: str, stats_ptr: c_void_p) -> float:
+        v = c_double()
+        self._check(getattr(self.lib, f"{solver}_get_dual_feas")(stats_ptr, ctypes.byref(v)), "get_dual_feas failed")
+        return float(v.value)
+
     def delete_stats(self, solver: str, stats_ptr: c_void_p):
         self._check(getattr(self.lib, f"{solver}_delete_stats")(stats_ptr), "delete_stats failed")
     
     def delete_solver(self, solver: str, solver_ptr: c_void_p):
         self._check(getattr(self.lib, f"{solver}_delete_solver")(solver_ptr), "delete_solver failed")
     
-    def delete_options(self, solver: str, opts_ptr: c_void_p):
-        self._check(getattr(self.lib, f"{solver}_delete_options_dict")(opts_ptr), "delete_options failed")
+    def delete_options(self, opts_ptr: c_void_p):
+        self._check(self.lib.libmad_delete_options_dict(opts_ptr), "delete_options failed")
 
     def delete(self, solver: str, stats_ptr: c_void_p, solver_ptr: c_void_p, opts_ptr: c_void_p):
         self.delete_stats(solver, stats_ptr)
         self.delete_solver(solver, solver_ptr)
-        # self.delete_options(solver, opts_ptr). # FIXME
+        # self.delete_options(opts_ptr). # FIXME
