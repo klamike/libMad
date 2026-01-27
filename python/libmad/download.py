@@ -55,7 +55,7 @@ def _platform_asset_key() -> str:
     raise RuntimeError(f"Unsupported platform/arch: {system}/{machine}")
 
 
-def _default_cache_dir() -> str:
+def default_cache_dir() -> str:
     override = os.environ.get("LIBMAD_CACHE_DIR")
     if override:
         return override
@@ -109,8 +109,8 @@ def resolve_lib_path(path: str) -> str:
     raise FileNotFoundError(f"LIBMAD_PATH does not exist: {path}")
 
 def default_download() -> str:
-    cache_dir = _default_cache_dir()
-    cached = _find_cached_lib(cache_dir)
+    cache_dir = default_cache_dir()
+    cached = find_cached_lib(cache_dir)
     if cached:
         return cached
     return download_and_extract(_DEFAULT_RELEASE, _platform_asset_key(), cache_dir)
@@ -157,7 +157,7 @@ def download_and_extract(tag: str, platform_key: str, cache_dir: str) -> str:
     return str(lib_path)
 
 
-def _find_cached_lib(cache_dir: str) -> str | None:
+def find_cached_lib(cache_dir: str) -> str | None:
     cache_path = Path(cache_dir)
     if not cache_path.is_dir():
         return None

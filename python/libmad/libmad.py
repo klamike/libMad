@@ -4,7 +4,7 @@ import os
 from typing import Union
 from ctypes import c_int, c_double, c_longlong, c_bool, c_void_p, c_char_p, POINTER, CFUNCTYPE
 
-from libmad.download import default_download, resolve_lib_path
+from libmad.download import default_download, resolve_lib_path, default_cache_dir, find_cached_lib
 from libmad.source import build_from_source
 
 
@@ -76,10 +76,14 @@ class libMad:
                     raise RuntimeError("libMad build did not produce a shared library.")
                 os.environ["LIBMAD_PATH"] = os.path.dirname(lib_path)
             else:
-                print("Downloading libMad from GitHub...")
-                lib_path = default_download()
+                cached = find_cached_lib(default_cache_dir())
+                if cached:
+                    lib_path = cached
+                else:
+                    print("Downloading libMad from GitHub...")
+                    lib_path = default_download()
+                    print("libMad downloaded to:", lib_path)
                 os.environ["LIBMAD_PATH"] = os.path.dirname(lib_path)
-                print("libMad downloaded to:", lib_path)
 
         self.lib = ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
 
