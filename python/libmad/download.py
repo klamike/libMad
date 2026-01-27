@@ -109,7 +109,11 @@ def resolve_lib_path(path: str) -> str:
     raise FileNotFoundError(f"LIBMAD_PATH does not exist: {path}")
 
 def default_download() -> str:
-    return download_and_extract(_DEFAULT_RELEASE, _platform_asset_key(), _default_cache_dir())
+    cache_dir = _default_cache_dir()
+    cached = _find_cached_lib(cache_dir)
+    if cached:
+        return cached
+    return download_and_extract(_DEFAULT_RELEASE, _platform_asset_key(), cache_dir)
 
 def download_and_extract(tag: str, platform_key: str, cache_dir: str) -> str:
     if os.environ.get("LIBMAD_NO_DOWNLOAD"):
@@ -151,3 +155,23 @@ def download_and_extract(tag: str, platform_key: str, cache_dir: str) -> str:
             f"libMad library not found after download: {lib_path}"
         )
     return str(lib_path)
+
+
+def _find_cached_lib(cache_dir: str) -> str | None:
+    cache_path = Path(cache_dir)
+    if not cache_path.is_dir():
+        return None
+
+    platform_key = _platform_asset_key()
+    lib_name = _lib_filename()
+
+    if _DEFAULT_RELEASE != "latest":
+        candidate = cache_path / _DEFAULT_RELEASE / platform_key / _lib_subdir() / lib_name
+        return str(candidate) if candidate.is_file() else None
+
+    matches = list(cache_path.glob(f"*/{platform_key}/{_lib_subdir()}/{lib_name}"))
+    if not matches:
+        return None
+
+    newest = max(matches, key=lambda p: p.stat().st_mtime)
+    return str(newest)

@@ -17,6 +17,8 @@ class libMad:
     NlpEvalConstrJac      = CFUNCTYPE(c_int, POINTER(c_double), POINTER(c_double), c_void_p)
     NlpEvalLagHess        = CFUNCTYPE(c_int, c_double, POINTER(c_double), POINTER(c_double), POINTER(c_double), c_void_p)
 
+    SOLVERS = ["madnlp"]
+
     TYPES = [
         ("libmad_create_options_dict",    [POINTER(c_void_p)]),
         ("libmad_set_int64_option",       [c_void_p, c_char_p, c_longlong]),
@@ -24,28 +26,32 @@ class libMad:
         ("libmad_set_bool_option",        [c_void_p, c_char_p, c_bool]),
         ("libmad_set_string_option",      [c_void_p, c_char_p, c_char_p]),
         ("libmad_delete_options_dict",    [c_void_p]),
-        ("madnlp_create_solver",          [POINTER(c_void_p), c_void_p, c_void_p]),
-        ("madnlp_delete_solver",          [c_void_p]),
-        ("madnlp_solve",                  [c_void_p, c_void_p, POINTER(c_void_p)]),
-        ("madnlp_get_obj",                [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_solution",           [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_constraints",        [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_multipliers",        [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_multipliers_L",      [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_multipliers_U",      [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_bound_multipliers",  [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_success",            [c_void_p, POINTER(c_bool)]),
-        ("madnlp_get_iters",              [c_void_p, POINTER(c_longlong)]),
-        ("madnlp_get_primal_feas",        [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_dual_feas",          [c_void_p, POINTER(c_double)]),
-        ("madnlp_get_status",             [c_void_p, POINTER(c_longlong)]),
-        ("madnlp_delete_stats",           [c_void_p]),
         ("libmad_nlpmodel_create",        [POINTER(c_void_p), c_char_p, c_longlong, c_longlong, c_longlong, c_longlong,
                                             NlpConstrJacStructure, NlpLagHessStructure, NlpEvalObj, NlpEvalConstr,
                                             NlpEvalObjGrad, NlpEvalConstrJac, NlpEvalLagHess, c_void_p]),
         ("libmad_nlpmodel_set_numerics",  [c_void_p, POINTER(c_double), POINTER(c_double), POINTER(c_double),
                                             POINTER(c_double), POINTER(c_double), POINTER(c_double)]),
     ]
+
+    for solver in SOLVERS: 
+        TYPES.extend([
+            (f"{solver}_create_solver",          [POINTER(c_void_p), c_void_p, c_void_p]),
+            (f"{solver}_delete_solver",          [c_void_p]),
+            (f"{solver}_solve",                  [c_void_p, c_void_p, POINTER(c_void_p)]),
+            (f"{solver}_get_obj",                [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_solution",           [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_constraints",        [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_multipliers",        [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_multipliers_L",      [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_multipliers_U",      [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_bound_multipliers",  [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_success",            [c_void_p, POINTER(c_bool)]),
+            (f"{solver}_get_iters",              [c_void_p, POINTER(c_longlong)]),
+            (f"{solver}_get_primal_feas",        [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_dual_feas",          [c_void_p, POINTER(c_double)]),
+            (f"{solver}_get_status",             [c_void_p, POINTER(c_longlong)]),
+            (f"{solver}_delete_stats",           [c_void_p]),
+        ])
 
     def __init__(self, path: Union[str, None] = None, source_path: Union[str, None] = None):
         self.lib = None
@@ -153,56 +159,52 @@ class libMad:
         ), "set_numerics failed")
 
     def create_solver(self, solver: str, nlp_ptr: c_void_p, opts_ptr: c_void_p) -> c_void_p:
-        if solver != "madnlp":
-            raise RuntimeError(f"Unsupported solver: {solver}")
         solver_ptr = c_void_p()
-        self._check(self.lib.madnlp_create_solver(
+        self._check(getattr(self.lib, f"{solver}_create_solver")(
             ctypes.byref(solver_ptr), nlp_ptr, opts_ptr
         ), "create_solver failed")
         return solver_ptr
 
     def solve(self, solver: str, solver_ptr: c_void_p, opts_ptr: c_void_p) -> c_void_p:
-        if solver != "madnlp":
-            raise RuntimeError(f"Unsupported solver: {solver}")
         stats = c_void_p()
-        self._check(self.lib.madnlp_solve(solver_ptr, opts_ptr, ctypes.byref(stats)), "solve failed")
+        self._check(getattr(self.lib, f"{solver}_solve")(solver_ptr, opts_ptr, ctypes.byref(stats)), "solve failed")
         return stats
 
-    def get_success(self, stats_ptr: c_void_p) -> bool:
+    def get_success(self, solver: str, stats_ptr: c_void_p) -> bool:
         v = c_bool()
-        self._check(self.lib.madnlp_get_success(stats_ptr, ctypes.byref(v)), "get_success failed")
+        self._check(getattr(self.lib, f"{solver}_get_success")(stats_ptr, ctypes.byref(v)), "get_success failed")
         return bool(v.value)
 
-    def get_status(self, stats_ptr: c_void_p) -> int:
+    def get_status(self, solver: str, stats_ptr: c_void_p) -> int:
         v = c_longlong()
-        self._check(self.lib.madnlp_get_status(stats_ptr, ctypes.byref(v)), "get_status failed")
+        self._check(getattr(self.lib, f"{solver}_get_status")(stats_ptr, ctypes.byref(v)), "get_status failed")  
         return int(v.value)
 
-    def get_iters(self, stats_ptr: c_void_p) -> int:
+    def get_iters(self, solver: str, stats_ptr: c_void_p) -> int:
         v = c_longlong()
-        self._check(self.lib.madnlp_get_iters(stats_ptr, ctypes.byref(v)), "get_iters failed")
+        self._check(getattr(self.lib, f"{solver}_get_iters")(stats_ptr, ctypes.byref(v)), "get_iters failed")
         return int(v.value)
 
-    def get_obj(self, stats_ptr: c_void_p) -> float:
+    def get_obj(self, solver: str, stats_ptr: c_void_p) -> float:
         v = c_double()
-        self._check(self.lib.madnlp_get_obj(stats_ptr, ctypes.byref(v)), "get_obj failed")
+        self._check(getattr(self.lib, f"{solver}_get_obj")(stats_ptr, ctypes.byref(v)), "get_obj failed")
         return float(v.value)
 
-    def get_solution(self, stats_ptr: c_void_p, n: int, tolist=False) -> Union[list[float], ctypes.Array]:
+    def get_solution(self, solver: str, stats_ptr: c_void_p, n: int, tolist=False) -> Union[list[float], ctypes.Array]:
         x = (c_double * n)()
-        self._check(self.lib.madnlp_get_solution(stats_ptr, x), "get_solution failed")
+        self._check(getattr(self.lib, f"{solver}_get_solution")(stats_ptr, x), "get_solution failed")
         return list(x) if tolist else x
 
-    def delete_stats(self, stats_ptr: c_void_p):
-        self._check(self.lib.madnlp_delete_stats(stats_ptr), "delete_stats failed")
+    def delete_stats(self, solver: str, stats_ptr: c_void_p):
+        self._check(getattr(self.lib, f"{solver}_delete_stats")(stats_ptr), "delete_stats failed")
     
-    def delete_solver(self, solver_ptr: c_void_p):
-        self._check(self.lib.madnlp_delete_solver(solver_ptr), "delete_solver failed")
+    def delete_solver(self, solver: str, solver_ptr: c_void_p):
+        self._check(getattr(self.lib, f"{solver}_delete_solver")(solver_ptr), "delete_solver failed")
     
-    def delete_options(self, opts_ptr: c_void_p):
-        self._check(self.lib.libmad_delete_options_dict(opts_ptr), "delete_options failed")
+    def delete_options(self, solver: str, opts_ptr: c_void_p):
+        self._check(getattr(self.lib, f"{solver}_delete_options_dict")(opts_ptr), "delete_options failed")
 
-    def delete(self, stats_ptr: c_void_p, solver_ptr: c_void_p, opts_ptr: c_void_p):
-        self.delete_stats(stats_ptr)
-        self.delete_solver(solver_ptr)
-        # self.delete_options(opts_ptr). # FIXME
+    def delete(self, solver: str, stats_ptr: c_void_p, solver_ptr: c_void_p, opts_ptr: c_void_p):
+        self.delete_stats(solver, stats_ptr)
+        self.delete_solver(solver, solver_ptr)
+        # self.delete_options(solver, opts_ptr). # FIXME
