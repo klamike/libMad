@@ -60,7 +60,7 @@ function generate_solve(solname, solver_expr, optsdict_expr, stats_expr)
             stats = $(stats_expr)(solver)
             status = 0
             try
-                stats = solve!(solver, stats)
+                stats = MadNLP.solve!(solver, stats)
             catch e
                 status = solver.status
             finally
