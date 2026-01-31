@@ -63,6 +63,11 @@ function generate_solve(solname, solver_expr, optsdict_expr, stats_expr)
                 stats = MadNLP.solve!(solver, stats)  # FIXME: dispatch on solver
             catch e
                 status = solver.status
+                if MadNLP.SOLVE_SUCCEEDED <= status <= MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                    status = 0
+                else
+                    status = 1
+                end
             finally
                 stats_ptr = pointer_from_objref(stats)
                 unsafe_store!(stats_ptr_ptr, stats_ptr)
