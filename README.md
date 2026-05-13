@@ -9,8 +9,7 @@ As it currently stands we require several environment variables to be set when u
 The following are necessary for any interface:
 
 1. `JULIA_CUDA_USE_COMPAT="false"` This is necessary to make sure that `CUDA_Driver_jll` does not attempt to fork a second julia process which fails as the binary does not exist.
-2. `JULIA_HSL_LIBRARY_PATH="path/to/hsl/lib"` This is necessary to use the HSL linear system solvers: `Ma*7Solver`.
-3. `JULIA_CUDSS_LIBRARY_PATH="path/to/cudss/lib"` This may be necessary if the `CUDA_Runtime_Discovery` package cannot find the cuDSS libraries.
+2. `JULIA_CUDSS_LIBRARY_PATH="path/to/cudss/lib"` This may be necessary if the `CUDA_Runtime_Discovery` package cannot find the cuDSS libraries.
 
 And then several language specific issues may occur if the shared library is loaded through, e.g., the CasADi interface for python or Matlab:
 

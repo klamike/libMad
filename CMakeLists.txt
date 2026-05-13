@@ -9,12 +9,6 @@ if(NOT JULIAC_FLAGS)
 endif()
 option(WITH_EXAMPLE "Build basic example" ON)
 
-# Set JULIA_HSL_LIBRARY_PATH.
-# TODO(@anton) Make this make sense for mac/windows?
-# TODO(@anton) There might be a better way of doing this.
-#              Currently HSL.jl loads this at compile time
-#SET(ENV{JULIA_HSL_LIBRARY_PATH} ".")
-
 message(CHECK_START "Check Juliaup Executable")
 set(JULIAUP_EXECUTABLE "juliaup" CACHE STRING "Juliaup executable default")
 if (JULIAUP_EXECUTABLE STREQUAL "julia")
@@ -137,11 +131,9 @@ set(LIBMAD_SHARED_LIBRARY_DEPENDENCIES
   ${PROJECT_SOURCE_DIR}/src/solver.jl
   ${PROJECT_SOURCE_DIR}/src/stats.jl
   ${PROJECT_SOURCE_DIR}/src/nlpmodels.jl
-  ${PROJECT_SOURCE_DIR}/src/mpccmodels.jl
+  ${PROJECT_SOURCE_DIR}/src/madipm_batch.jl
   ${PROJECT_SOURCE_DIR}/src/madnlp/gpu.jl
   ${PROJECT_SOURCE_DIR}/src/madnlp/stats.jl
-  ${PROJECT_SOURCE_DIR}/src/ccopt/solver.jl
-  ${PROJECT_SOURCE_DIR}/src/ccopt/stats.jl
 )
 set(LIBMAD_GENERATE_HEADERS_SCRIPT ${PROJECT_SOURCE_DIR}/scripts/generate_headers.jl)
 set(LIBMAD_HEADER_DEPENDENCIES
@@ -151,11 +143,9 @@ set(LIBMAD_HEADER_DEPENDENCIES
   ${PROJECT_SOURCE_DIR}/src/solver.jl
   ${PROJECT_SOURCE_DIR}/src/stats.jl
   ${PROJECT_SOURCE_DIR}/src/nlpmodels.jl
-  ${PROJECT_SOURCE_DIR}/src/mpccmodels.jl
+  ${PROJECT_SOURCE_DIR}/src/madipm_batch.jl
   ${PROJECT_SOURCE_DIR}/src/madnlp/gpu.jl
   ${PROJECT_SOURCE_DIR}/src/madnlp/stats.jl
-  ${PROJECT_SOURCE_DIR}/src/ccopt/solver.jl
-  ${PROJECT_SOURCE_DIR}/src/ccopt/stats.jl
   ${PROJECT_SOURCE_DIR}/scripts/generate_headers.jl
 )
 if(LINUX OR APPLE)
@@ -188,7 +178,7 @@ message("${LIBMAD_SHARED_LIBRARY_DEPENDENCIES}")
 # SETUP THE BUILD
 add_custom_command(
   OUTPUT ${LIBMAD_JULIAC_OUTPUTS}
-  COMMAND ${JULIAC_EXECUTABLE} --verbose --compile-ccallable --include-preferences --bundle ${PROJECT_BINARY_DIR} --experimental ${JULIAC_FLAGS} --output-lib libMad ${PROJECT_SOURCE_DIR}
+  COMMAND ${JULIAC_EXECUTABLE} --verbose --compile-ccallable --bundle ${PROJECT_BINARY_DIR} --experimental ${JULIAC_FLAGS} --output-lib libMad ${PROJECT_SOURCE_DIR}
   DEPENDS ${LIBMAD_SHARED_LIBRARY_DEPENDENCIES}
 )
 
@@ -233,15 +223,15 @@ if(WITH_EXAMPLE)
   endif()
   target_link_libraries(basic_problem PRIVATE libMad)
 
-  add_executable(no_hsl_example $<SHELL_PATH:${PROJECT_SOURCE_DIR}/examples/no_hsl_example.c>)
+  add_executable(linear_solvers_example $<SHELL_PATH:${PROJECT_SOURCE_DIR}/examples/linear_solvers_example.c>)
   if(APPLE)
     set_target_properties(
-    no_hsl_example
+    linear_solvers_example
     PROPERTIES 
     INSTALL_RPATH 
     "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib")  
   endif()
-  target_link_libraries(no_hsl_example PRIVATE libMad)
+  target_link_libraries(linear_solvers_example PRIVATE libMad)
 
   add_executable(gpu_example $<SHELL_PATH:${PROJECT_SOURCE_DIR}/examples/gpu_example.c>)
   if(APPLE)
@@ -253,15 +243,6 @@ if(WITH_EXAMPLE)
   endif()
   target_link_libraries(gpu_example PRIVATE libMad)
 
-  add_executable(mpcc_example $<SHELL_PATH:${PROJECT_SOURCE_DIR}/examples/mpcc_example.c>)
-  if(APPLE)
-    set_target_properties(
-    mpcc_example
-    PROPERTIES 
-    INSTALL_RPATH 
-    "${CMAKE_INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib")  
-  endif()
-  target_link_libraries(mpcc_example PRIVATE libMad)
 endif()
 
 cmake_print_properties(TARGETS libMad
@@ -288,11 +269,9 @@ install(
 if(WITH_EXAMPLE)
   install(TARGETS basic_problem
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-  install(TARGETS no_hsl_example
+  install(TARGETS linear_solvers_example
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   install(TARGETS gpu_example
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-  install(TARGETS mpcc_example
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 ## Export configs

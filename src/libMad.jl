@@ -2,11 +2,13 @@ module libMad
 
 using Preferences
 using InteractiveUtils
+using Atomix
+using BatchQuadraticModels
+using KernelAbstractions
+using MadIPM
 using MadNLP
 using MadNLP: SparseWrapperModel
-using MadNLPHSL
 using NLPModels
-using PrecompileTools: @setup_workload, @compile_workload, verbose
 using Base: unsafe_convert
 using SolverCore
 @static if !Sys.isapple()
@@ -27,6 +29,7 @@ include("options.jl")
 include("nlpmodels.jl")
 include("solver.jl")
 include("stats.jl")
+include("madipm_batch.jl")
 # MadNLP Solver interface definition
 # First define the possible types that any given `::Type` option can take.
 # This is important as it allows `--trim` to be smart about what types to keep
@@ -68,25 +71,4 @@ end
 # Now create solver interface
 @solver(madnlp, MadNLPSolver{Cdouble,Vector{Cdouble}}, MadNLPOptsDict, MadNLPExecutionStats)
 
-# Precompile workload for madnlp
-include("madnlp/workload_precomp.jl")
-
-# 
-using CCOpt
-using CCOpt: MPCCModel, MPCCModelVarVar, IndexSet, CCOptExecutionStats, RelaxationOptions, RelaxationSolver, solve_homotopy!
-include("mpccmodels.jl")
-include("ccopt/stats.jl")
-
-@concrete_dict RLX_DICT CCOpt.AbstractMPCCRelaxation
-
-@mpcc_stats(ccopt_relaxation, CCOptExecutionStats)
-const ccopt_relaxation_type_dict = Dict(
-    "relaxation" => RLX_DICT
-)
-@opts(ccopt_relaxation, RelaxationOptions{Cdouble}, libMad.ccopt_relaxation_type_dict)
-
-include("ccopt/solver.jl")
-
-# Precompile workload for madnlp
-include("ccopt/workload_precomp.jl")
 end # module libMad

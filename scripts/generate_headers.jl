@@ -24,10 +24,14 @@ open(joinpath(outpath,"libMad.h"), "w") do header
     #define libmad_int long long int
     #define libmad_real double
 
-    #define LIBMAD_CCOPT_VARVAR 0
-    #define LIBMAD_CCOPT_VARCON 1
-    #define LIBMAD_CCOPT_CONVAR 2
-    #define LIBMAD_CCOPT_CONCON 3
+    #define LIBMAD_STATUS_UNKNOWN 0
+    #define LIBMAD_STATUS_OPTIMAL 1
+    #define LIBMAD_STATUS_INFEASIBLE 2
+    #define LIBMAD_STATUS_UNBOUNDED 3
+    #define LIBMAD_STATUS_INTERRUPTED 4
+    #define LIBMAD_STATUS_ITERATION_LIMIT 5
+    #define LIBMAD_STATUS_TIME_LIMIT 6
+    #define LIBMAD_STATUS_ERROR 7
 
     // function pointer types
     typedef int (*NlpConstrJacStructure)(libmad_int*, libmad_int*, void*);
@@ -37,6 +41,7 @@ open(joinpath(outpath,"libMad.h"), "w") do header
     typedef int (*NlpEvalObjGrad)(const libmad_real*, libmad_real*, void*);
     typedef int (*NlpEvalConstrJac)(const libmad_real*, libmad_real*, void*);
     typedef int (*NlpEvalLagHess)(libmad_real, const libmad_real*, const libmad_real*, libmad_real*, void*);
+    typedef int (*LibMadTerminationCheck)(void*);
     """)
     for ds in libMad.dummy_structs
         println(header, "typedef struct $(ds) $(ds);")
